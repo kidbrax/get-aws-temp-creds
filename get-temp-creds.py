@@ -1,6 +1,12 @@
 #!/usr/bin/env python3
 
+# This script will read creds for a given profile from your ~/.aws/credentials file
+# and then get temp session creds and then write those back out to your ~/.aws/credentials file
+# with a '-temp' extension on the profile name
+
+import argparse
 import configparser
+import os
 import sys
 import boto3
 
@@ -31,7 +37,7 @@ def write_temp_creds(profile_name, temp_creds):
         creds_parser.write(config_file)
 
     print(
-        'Temp creds have been set to your env vars. They will expire at {}'
+        'Temp creds have been written to ~/.aws/credentials. They will expire at {}'
         .format(temp_creds['Expiration'])
     )
 
@@ -52,12 +58,19 @@ def get_temp_creds(profile_name, aws_key, aws_secret, mfa_arn):
 
     write_temp_creds(profile_name, temp_creds['Credentials'])
 
-credentials_path = '$HOME/.aws/credentials'
-profile = sys.argv[1]
+
+parser = argparse.ArgumentParser(description='Update your aws/.credentials file with a temp profile for your session.')
+parser.add_argument(
+    'profile_name',
+    type=str,
+    help='The name of the profile you want to use to get your session token'
+)
+args = parser.parse_args()
+
+credentials_path = "{}/.aws/credentials".format(os.environ['HOME'])
 creds_parser = configparser.ConfigParser()
 config_parser = configparser.ConfigParser()
-aws_key, aws_secret = get_permanent_creds(profile)
-mfa_arn = get_mfa_arn(profile)
+aws_key, aws_secret = get_permanent_creds(args.profile_name)
+mfa_arn = get_mfa_arn(args.profile_name)
 
-get_temp_creds(profile, aws_key, aws_secret, mfa_arn)
-
+get_temp_creds(args.profile_name, aws_key, aws_secret, mfa_arn)
